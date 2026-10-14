@@ -1,0 +1,20 @@
+{
+  "name": "idra-motion",
+  "version": "1.1.2",
+  "description": "Motion graphics, made with code: a scene is a web page whose every frame is a pure function of time, filmed with headless Chrome and ffmpeg.",
+  "type": "module",
+  "scripts": {
+    "preview": "node tools/serve.mjs",
+    "stills": "node render.mjs examples/hello/scene.html out/hello-check.jpg --stills 0.9,1.8,3.6,4.6,6.4,7.3,8.1,9.0,9.9",
+    "draft": "node render.mjs examples/hello/scene.html out/hello-draft.mp4 --fps 30",
+    "master": "node render.mjs examples/hello/scene.html out/hello.mp4 --fps 60 --subframes 4",
+    "mcp": "node mcp/server.mjs",
+    "test": "node tests/mcp.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "private": true,
+  "author": "Marvin Sarreal Villanueva <marvin@idra-ai.com> (https://idra-ai.com)"
+}

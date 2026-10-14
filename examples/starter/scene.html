@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>idra-motion: starter</title>
+<!--
+  The smallest useful idra-motion scene: a title springs up letter by letter, a line types itself,
+  the camera drifts, everything fades at the end. Start a new video from here (the new_scene tool
+  copies it). Replace the beat sheet first, then build each beat as a time window inside draw(t).
+
+  BEAT SHEET (seconds)   what is said, what is SEEN, what is HEARD
+   0.40  title springs up, one letter after another       drone, whoosh, pops
+   2.20  the line types itself under the title              key ticks
+   2.00  music enters under everything                      pad
+   7.40  everything fades to black                          (music ends)
+   8.00  end
+-->
+<style>
+  @font-face { font-family: "IDRA"; src: url("/fonts/Inter-opsz.woff2") format("woff2"); font-weight: 100 900; }
+  html, body { margin: 0; background: #000; overflow: hidden; height: 100%; }
+  #stage { position: absolute; left: 0; top: 0; overflow: hidden; background: #000;
+    font-family: "IDRA", system-ui, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
+  #stage * { box-sizing: border-box; }
+  .scene, .cam { position: absolute; inset: 0; }
+  .scene { visibility: hidden; }
+  .cam { transform-origin: 0 0; }
+  .abs { position: absolute; white-space: nowrap; }
+  .caret { display: inline-block; width: 3px; height: 1em; background: currentColor; margin-left: 3px; vertical-align: -0.12em; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <section class="scene" id="s1">
+    <div class="cam" id="c1">
+      <div class="abs" id="title" style="left:0;right:0;top:38%;text-align:center;font-size:120px;font-weight:750;letter-spacing:-0.045em"></div>
+      <div class="abs" id="line" style="left:0;right:0;top:56%;text-align:center;font-size:44px;font-weight:600;color:#a1a1a6"></div>
+    </div>
+  </section>
+</div>
+<script type="module">
+import { clamp, lerp, seg, ease, easeIn, spring, vis, cam, typed, letters, $, $$ } from "/engine/motion.js";
+import { mix, PROGRESSION } from "/engine/sound.js";
+import { film } from "/engine/stage.js";
+
+const WIDTH = 1920, HEIGHT = 1080, DURATION = 8;
+const TITLE = "Your product";
+const LINE = "One sentence about what it does.";
+const TITLE_AT = 0.4, LETTER_GAP = 0.03;   // the title's first letter, then one every 0.03 s
+const FADE = DURATION - 0.6;               // everything fades out over the last 0.6 s
+// The line types from 2.2 s at 22 characters a second, sooner and faster in a short video, so it
+// always finishes well before the fade.
+const LINE_AT = Math.min(2.2, DURATION * 0.28);
+const LINE_CPS = Math.max(22, LINE.length / (FADE * 0.85 - LINE_AT));
+
+const stage = $("#stage");
+stage.style.width = `${WIDTH}px`;
+stage.style.height = `${HEIGHT}px`;
+$("#title").innerHTML = letters(TITLE);
+const E = Object.fromEntries($$("[id]").map((el) => [el.id, el]));
+const titleLetters = $$("#title span");
+
+function draw(t) {
+  vis(E.s1, 1);
+  // A slow push in across the whole scene.
+  cam(E.c1, WIDTH / 2, HEIGHT / 2, lerp(1.06, 1, ease(seg(t, 0, DURATION))), WIDTH, HEIGHT);
+  titleLetters.forEach((el, i) => {
+    const k = spring(t - (TITLE_AT + i * LETTER_GAP), 14, 0.8);
+    el.style.opacity = clamp(k * 1.6);
+    el.style.transform = `translateY(${lerp(70, 0, k)}px)`;
+  });
+  typed(E.line, LINE, t, LINE_AT, LINE_CPS);
+  E.c1.style.opacity = 1 - easeIn(seg(t, FADE, DURATION));
+}
+
+// The soundtrack, from the same times as the picture.
+async function sound(ctx) {
+  const m = mix(ctx);
+  m.drone(0, 2.6);
+  await Promise.all([
+    m.sfx("whoosh", TITLE_AT - 0.15, 0.35, 1.1),
+    ...titleLetters.filter((_, i) => i % 3 === 0).map((_, n) => m.sfx("pop", TITLE_AT + n * 3 * LETTER_GAP + 0.05, 0.16, 0.9 + n * 0.04)),
+    m.keys(LINE_AT, LINE.length, LINE_CPS, 0.18)
+  ]);
+  m.pad(2.0, 2.4, DURATION, PROGRESSION.slice(0, 3));
+}
+
+film({ width: WIDTH, height: HEIGHT, duration: DURATION, draw, sound, fonts: ["600 40px IDRA", "750 40px IDRA"] });
+</script>
+</body>
+</html>

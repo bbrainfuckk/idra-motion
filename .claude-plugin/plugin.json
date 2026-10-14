@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "idra-motion",
+  "displayName": "idra-motion",
+  "version": "1.1.2",
+  "description": "Motion graphics, made with code. The skill carries the one-shot trailer method; the MCP server previews scenes, shows stills, renders video, makes ElevenLabs narration and times every word with Whisper.",
+  "author": { "name": "Marvin Sarreal Villanueva", "email": "marvin@idra-ai.com", "url": "https://idra-ai.com" },
+  "homepage": "https://github.com/bbrainfuckk/idra-motion",
+  "repository": "https://github.com/bbrainfuckk/idra-motion",
+  "license": "LicenseRef-IDRA-Motion-License-1.0",
+  "keywords": ["motion-graphics", "video", "trailer", "explainer-video", "animation", "ffmpeg", "elevenlabs", "mcp"],
+  "mcpServers": {
+    "idra-motion": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/server.mjs"]
+    }
+  }
+}

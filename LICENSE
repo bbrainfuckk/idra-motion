@@ -1,0 +1,69 @@
+IDRA Motion License 1.0
+
+Copyright (c) 2026 Marvin Sarreal Villanueva (IDRA). All rights reserved, except as granted below.
+
+"The Software" means everything in this repository (code, documentation, examples, the skill, sound
+effects, images and video), except the Inter font in fonts/. "Your videos" means the videos, images,
+audio and other media you make by running the Software.
+
+The Software is source available, not open source. You may read it and use it to make your own videos.
+You may not copy it, change it, share it, sell it or rebuild it.
+
+1. What you may do
+
+   a. Read and study the Software.
+   b. Download, install and run the Software, unmodified, on computers you own or control, to make
+      your videos. This includes installing the skill in skills/ and running the MCP server in mcp/
+      (directly or as the Claude Code plugin) for an AI agent that you direct.
+   c. Write your own scene files that call the Software, and use the example scenes in examples/ as a
+      starting point for them. Scene files you write are yours.
+   d. Use, publish and sell your videos, for personal or commercial work, including work for your own
+      clients, with no fee. You own your videos. Credit ("Made with idra-motion") is welcome but not
+      required.
+
+2. What you may not do
+
+   a. Except as section 1 allows, copy, share, publish, distribute, sublicense, sell, rent or lend the
+      Software or any substantial part of it, in source or any other form.
+   b. Modify the Software, or make, share or publish modified versions of it or works based on it. You
+      may make small private changes needed to run it on your own computers, as long as you never share
+      them. Your own scene files are not affected by this.
+   c. Offer the Software, or anything built with its code, to others as a product or service: for
+      example a hosted renderer, an API, an app, a template pack or a video generation tool. Making
+      videos for your own clients is allowed (section 1d).
+   d. Recreate the Software: use its code, documentation or skill to build, or to help anyone build, a
+      tool, library, service or skill that does the same job as the Software or competes with it.
+   e. Use the Software, its documentation or its skill to train or fine-tune a machine learning model,
+      or put them in a dataset.
+   f. Remove or change this licence, the copyright notices or CREDITS.md.
+   g. Use the names IDRA or idra-motion, or the IDRA logo, to name or promote your own product. You may
+      say that a video was made with idra-motion.
+
+3. Third-party parts
+
+   The Inter font in fonts/ comes from others and stays under its own licence (SIL Open Font License
+   1.1, fonts/OFL.txt). Nothing in this licence limits what that licence allows for it.
+
+4. GitHub
+
+   This repository is public on GitHub. GitHub's Terms of Service let GitHub users view it and fork it
+   on GitHub. A fork carries this licence with it and gives no other rights.
+
+5. Ending
+
+   If you break this licence, your permission ends automatically. If you put things right within 30
+   days of being told, your permission comes back. Videos you made while your permission was in place
+   stay yours.
+
+6. Other uses
+
+   For anything this licence does not allow (sharing, a hosted service, a custom arrangement), write to
+   marvin@idra-ai.com.
+
+7. No warranty
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+   NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR OR COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES
+   OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

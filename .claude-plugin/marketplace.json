@@ -1,0 +1,12 @@
+{
+  "name": "idra-motion",
+  "description": "Motion graphics, made with code, by IDRA.",
+  "owner": { "name": "IDRA", "email": "marvin@idra-ai.com", "url": "https://idra-ai.com" },
+  "plugins": [
+    {
+      "name": "idra-motion",
+      "source": ".",
+      "description": "The one-shot trailer method as a skill, plus an MCP server that previews, shows stills, renders, makes narration and times every word."
+    }
+  ]
+}
