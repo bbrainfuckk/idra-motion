@@ -184,8 +184,7 @@ No CSS transitions, no timers, no state between frames. Same `t`, same frame: an
 | `tools/ttswp-say.php` | Narration from TTSWP credits, run with WP-CLI on a WordPress site. |
 | `tools/serve.mjs` | The preview server. |
 | `.env.example` | Where your ElevenLabs key goes: copy it to `.env` (git ignores `.env`). |
-| `sfx/` | Six sound effects (whoosh, click, pop, riser, impact, tick), made by `tools/make-sfx.mjs`. |
-| `tools/make-sfx.mjs` | Builds the sound effects from noise, tones, filters and envelopes. |
+| `sfx/` | Six sound effects (whoosh, click, pop, riser, impact, tick), public domain (CC0). |
 | `fonts/` | Inter (SIL Open Font License). |
 | `examples/starter/` | The scene `new_scene` copies: title, typed line, camera drift, sound. |
 | `examples/hello/` | A finished 10 second example with sound. |
@@ -213,5 +212,6 @@ rebuild idra-motion itself. For any other use, write to marvin@idra-ai.com.
 
 ## Credits
 
-Made by Marvin Sarreal Villanueva at [IDRA](https://idra-ai.com). The sound effects and the music are
-synthesised by idra-motion itself; the font is Inter. Details in [CREDITS.md](CREDITS.md).
+Made by Marvin Sarreal Villanueva at [IDRA](https://idra-ai.com). The music is synthesised by
+idra-motion itself, the sound effects are public domain (CC0), and the font is Inter. Details in
+[CREDITS.md](CREDITS.md).

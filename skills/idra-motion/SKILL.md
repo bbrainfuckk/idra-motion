@@ -99,7 +99,7 @@ uploads). Pull a poster frame with ffmpeg (`-ss <t> -frames:v 1`).
 ## 6. Deliver
 
 The master, the web cut, the poster, and a credits file: the licence of any sound you added (the
-bundled kit is idra-motion's own), the voice provider, the font licence. Show the person stills or the draft before calling it done, and
+bundled kit is public domain, CC0), the voice provider, the font licence. Show the person stills or the draft before calling it done, and
 take their notes as new rows in the beat sheet.
 
 idra-motion is source available (see LICENSE): use it to make videos, which the person owns. Don't

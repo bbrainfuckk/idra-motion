@@ -3,7 +3,7 @@
 // API key: the handshake, guide, new_scene, preview, stills (with the image), a draft render that
 // outlasts its wait and finishes through job_status, soundtrack, stopping a job, prompts, resources,
 // and plain-word errors.   node tests/mcp.test.mjs
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -101,11 +101,26 @@ try {
 } catch (e) {
   check("no crash", false, e.stack);
 }
+// The renderer on its own must remove its browser profile before it exits (no server to clean up after it).
+{
+  const seen = new Set(profiles());
+  const r = spawnSync(process.execPath, [join(REPO, "render.mjs"), join(REPO, "examples", "starter", "scene.html"), join(work, "solo.jpg"), "--stills", "1"], { encoding: "utf8", timeout: 120000 });
+  const left = profiles().filter((n) => !seen.has(n) && !before.has(n));
+  check("render.mjs alone leaves no browser profile behind", r.status === 0 && left.length === 0, left.join(", ") || r.stderr);
+}
 server.stdin.end();
 await new Promise((ok) => server.on("close", ok));
-rmSync(work, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });
-await new Promise((ok) => setTimeout(ok, 4000));
-const left = profiles().filter((n) => !before.has(n));
+// A render stopped a moment ago can still be letting go of files in the scratch folder: keep trying.
+for (let i = 0; i < 60; i += 1) {
+  try { rmSync(work, { recursive: true, force: true }); break; } catch { await new Promise((ok) => setTimeout(ok, 500)); }
+}
+// A stopped browser can hold its folder for a while; the server's sweeper keeps trying for up to 90 s.
+let left = [];
+for (let i = 0; i < 45; i += 1) {
+  await new Promise((ok) => setTimeout(ok, 1000));
+  left = profiles().filter((n) => !before.has(n));
+  if (!left.length) break;
+}
 check("no browser profile folders left behind (including the stopped render)", left.length === 0, left.join(", "));
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed) console.log("server stderr:\n" + stderr.slice(-2000));

@@ -120,14 +120,18 @@ async function openPage(size = { w: 1920, h: 1080 }) {
   };
   return { evaluate, shot, video };
 }
-// Wait for the browser to really exit before deleting its profile; it holds files open until then.
+// Ask the browser to close itself, so all of its helper processes shut down with it, then delete its
+// profile. Killing it instead leaves helpers holding the profile's files for a few seconds.
 const finish = async (code = 0) => {
-  try { ws.close(); } catch {}
   const exited = browser.exitCode !== null ? Promise.resolve() : new Promise((ok) => browser.once("exit", ok));
-  browser.kill();
-  server.close();
+  try { await Promise.race([cdp("Browser.close"), sleep(2000)]); } catch {}
   await Promise.race([exited, sleep(5000)]);
-  try { rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 }); } catch {}
+  try { ws.close(); } catch {}
+  if (browser.exitCode === null) browser.kill();
+  server.close();
+  for (let i = 0; i < 40; i += 1) {
+    try { rmSync(profile, { recursive: true, force: true }); break; } catch { await sleep(250); }
+  }
   process.exit(code);
 };
 

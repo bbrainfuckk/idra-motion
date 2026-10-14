@@ -499,16 +499,23 @@ createInterface({ input: process.stdin }).on("line", async (line) => {
   const handler = METHODS[method];
   if (!handler) return send({ id, error: { code: -32601, message: `Method not found: ${method}` } });
   try { send({ id, result: await handler(params) }); } catch (e) { send({ id, error: { code: e.code ?? -32603, message: e.message } }); }
-}).on("close", async () => {
-  // The client went away: stop anything still running and remove its browser profile before exiting.
-  const running = [...jobs.values()].filter((j) => j.status === "running");
-  running.forEach(stop);
-  for (let i = 0; i < 10 && running.some((j) => j.profile && existsSync(j.profile)); i += 1) {
-    await sleep(1000);
-    for (const job of running) if (job.profile) try { rmSync(job.profile, { recursive: true, force: true }); } catch {}
-  }
+}).on("close", () => {
+  // The client went away: stop anything still running, then remove every browser profile this server
+  // made. A browser that was just stopped can hold its folder for a while, so whatever is still locked
+  // goes to a small detached sweeper that keeps trying after this process has exited.
+  [...jobs.values()].filter((j) => j.status === "running").forEach(stop);
+  const left = [...jobs.values()].map((j) => j.profile).filter((d) => d && existsSync(d)).filter((d) => {
+    try { rmSync(d, { recursive: true, force: true }); return existsSync(d); } catch { return true; }
+  });
+  if (left.length) sweepLater(left);
   process.exit(0);
 });
+// Retries removing exactly these folders once a second for up to 90 seconds, in its own process.
+function sweepLater(dirs) {
+  const code = "const fs=require('fs');const d=process.argv.slice(1);let n=0;setInterval(()=>{for(const x of d){try{fs.rmSync(x,{recursive:true,force:true})}catch{}}" +
+    "if(d.every((x)=>!fs.existsSync(x))||++n>=90)process.exit(0)},1000);";
+  spawn(process.execPath, ["-e", code, ...dirs], { detached: true, stdio: "ignore", windowsHide: true }).unref();
+}
 // One bad moment must not take the server (and the client's tools) down with it.
 process.on("uncaughtException", (e) => log("error:", e.stack || e.message));
 process.on("unhandledRejection", (e) => log("error:", e?.stack || String(e)));

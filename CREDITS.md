@@ -2,18 +2,19 @@
 
 ## Sound effects (`sfx/`)
 
-All six are made by `tools/make-sfx.mjs` from noise, sine waves, filters and envelopes, seeded so every
-run makes the same files. They are part of idra-motion and covered by its LICENSE. Use them in the
-videos you make with it.
+All six are public domain under Creative Commons 0 (CC0 1.0): free for any use, including commercial
+videos, with no credit required. Thanks to the people who recorded them, on Freesound:
 
-| File | What it is |
-| --- | --- |
-| `sfx/whoosh.ogg` | Air that rises and falls in pitch while it crosses the stereo field (0.43 s) |
-| `sfx/click.ogg` | A crisp press and a quieter release (0.09 s) |
-| `sfx/pop.ogg` | A round pop with a fast pitch drop (0.12 s) |
-| `sfx/riser.ogg` | Filtered noise and a tone climbing for two seconds |
-| `sfx/impact.ogg` | A deep thump with a short crack on top (0.27 s) |
-| `sfx/tick.ogg` | A 20 ms key or detent tick |
+| File | Sound | Creator | Source |
+| --- | --- | --- | --- |
+| `sfx/whoosh.ogg` | Whoosh | qubodup | https://freesound.org/people/qubodup/sounds/60013/ |
+| `sfx/click.ogg` | Classic Click | adh.dreaming | https://freesound.org/people/adh.dreaming/sounds/671105/ |
+| `sfx/pop.ogg` | POP SFX Neutral | ethernel0 | https://freesound.org/people/ethernel0/sounds/776016/ |
+| `sfx/riser.ogg` | Cinematic Riser #3 subtle | BeaconStudio | https://freesound.org/people/BeaconStudio/sounds/859482/ |
+| `sfx/impact.ogg` | soft_impact3 | peoplearehappy | https://freesound.org/people/peoplearehappy/sounds/841274/ |
+| `sfx/tick.ogg` | Click / Tick | Squirrel_404 | https://freesound.org/people/Squirrel_404/sounds/683048/ |
+
+The files are trimmed, peak-normalised OGG copies of those sounds.
 
 ## Music
 

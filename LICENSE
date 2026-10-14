@@ -2,8 +2,8 @@ IDRA Motion License 1.0
 
 Copyright (c) 2026 Marvin Sarreal Villanueva (IDRA). All rights reserved, except as granted below.
 
-"The Software" means everything in this repository (code, documentation, examples, the skill, sound
-effects, images and video), except the Inter font in fonts/. "Your videos" means the videos, images,
+"The Software" means everything in this repository (code, documentation, examples, the skill, images
+and video), except the Inter font in fonts/ and the sound effects in sfx/. "Your videos" means the videos, images,
 audio and other media you make by running the Software.
 
 The Software is source available, not open source. You may read it and use it to make your own videos.
@@ -41,8 +41,9 @@ You may not copy it, change it, share it, sell it or rebuild it.
 
 3. Third-party parts
 
-   The Inter font in fonts/ comes from others and stays under its own licence (SIL Open Font License
-   1.1, fonts/OFL.txt). Nothing in this licence limits what that licence allows for it.
+   The Inter font in fonts/ (SIL Open Font License 1.1, fonts/OFL.txt) and the sound effects in sfx/
+   (public domain, Creative Commons 0) come from others and stay under their own terms, listed in
+   CREDITS.md. Nothing in this licence limits what those terms allow for them.
 
 4. GitHub
 
