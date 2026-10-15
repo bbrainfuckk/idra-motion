@@ -116,7 +116,7 @@ function endBrowsers(profile) {
     spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command",
       `Get-CimInstance Win32_Process -Filter "CommandLine like '%${name}%'" | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`],
       { windowsHide: true, timeout: 20000 });
-  } else spawnSync("pkill", ["-f", name], { timeout: 10000 });
+  } else spawnSync("pkill", ["-9", "-f", name], { timeout: 10000 });
 }
 const jobs = new Map();
 let jobCount = 0;
@@ -150,8 +150,10 @@ function start(kind, args, { cwd, finish, python: usePython = false, total } = {
     job.ended = Date.now();
     log(`${id} ended (${job.status === "cancelled" ? "stopped" : `exit ${code}`}, ${secs(job)} s)`);
     if (profile) {
-      if (job.status === "cancelled" || code !== 0) endBrowsers(profile);
-      removeLater(profile);
+      // A finished render closed its browser itself; a stopped or failed one may still have browser
+      // processes writing to the folder, so the sweeper waits until it stays gone.
+      if (job.status === "cancelled" || code !== 0) sweepLater([profile]);
+      else removeLater(profile);
     }
     if (job.status === "cancelled") return job.waiters.splice(0).forEach((w) => w());
     if (code === 0) {
@@ -167,7 +169,7 @@ function stop(job) {
   job.status = "cancelled";
   try {
     if (IS_WIN) spawnSync("taskkill", ["/pid", String(job.child.pid), "/T", "/F"], { windowsHide: true });
-    else process.kill(-job.child.pid, "SIGTERM");
+    else process.kill(-job.child.pid, "SIGKILL"); // at once: a browser that shuts down slowly keeps writing to its folder
   } catch {}
   if (job.profile) endBrowsers(job.profile);
 }
@@ -512,21 +514,20 @@ createInterface({ input: process.stdin }).on("line", async (line) => {
   if (!handler) return send({ id, error: { code: -32601, message: `Method not found: ${method}` } });
   try { send({ id, result: await handler(params) }); } catch (e) { send({ id, error: { code: e.code ?? -32603, message: e.message } }); }
 }).on("close", () => {
-  // The client went away: stop anything still running, then remove every browser profile this server
-  // made. A browser that was just stopped can hold its folder for a while, so whatever is still locked
-  // goes to a small detached sweeper that keeps trying after this process has exited.
-  [...jobs.values()].filter((j) => j.status === "running").forEach(stop);
-  const left = [...jobs.values()].map((j) => j.profile).filter((d) => d && existsSync(d)).filter((d) => {
-    try { rmSync(d, { recursive: true, force: true }); return existsSync(d); } catch { return true; }
-  });
-  if (left.length) sweepLater(left);
+  // The client went away: stop anything still running, then hand every browser profile that may still
+  // exist, or come back, to the detached sweeper. A browser caught mid-start can write its folder again
+  // after it was deleted, so the sweeper only finishes once each folder has stayed gone.
+  const running = [...jobs.values()].filter((j) => j.status === "running");
+  running.forEach(stop);
+  const dirs = [...jobs.values()].filter((j) => j.profile && (running.includes(j) || j.status === "cancelled" || existsSync(j.profile))).map((j) => j.profile);
+  if (dirs.length) sweepLater(dirs);
   process.exit(0);
 });
-// Retries removing exactly these folders once a second for up to 90 seconds, in its own process.
+// Hands folders to mcp/sweep.mjs, which keeps at them after this process exits.
 function sweepLater(dirs) {
-  const code = "const fs=require('fs');const d=process.argv.slice(1);let n=0;setInterval(()=>{for(const x of d){try{fs.rmSync(x,{recursive:true,force:true})}catch{}}" +
-    "if(d.every((x)=>!fs.existsSync(x))||++n>=90)process.exit(0)},1000);";
-  spawn(process.execPath, ["-e", code, ...dirs], { detached: true, stdio: "ignore", windowsHide: true }).unref();
+  spawn(process.execPath, [join(REPO, "mcp", "sweep.mjs")], {
+    detached: true, stdio: "ignore", windowsHide: true, env: { ...process.env, IDRA_MOTION_SWEEP: JSON.stringify(dirs) }
+  }).unref();
 }
 // One bad moment must not take the server (and the client's tools) down with it.
 process.on("uncaughtException", (e) => log("error:", e.stack || e.message));

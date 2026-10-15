@@ -1,6 +1,6 @@
 {
   "name": "idra-motion",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Motion graphics, made with code: a scene is a web page whose every frame is a pure function of time, filmed with headless Chrome and ffmpeg.",
   "type": "module",
   "scripts": {
