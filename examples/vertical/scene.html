@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>idra-motion: vertical captions</title>
+<!--
+  Vertical captions: a 9:16 clip for Reels, TikTok and Shorts. Big captions a few words at a time; the
+  word being said lights up. A voice waveform moves only while someone is talking. With narration,
+  paste the starts from word_timings (tools/vo.py words) into WORDS and add m.voice(...) in sound().
+
+  BEAT SHEET (seconds)                                                           HEARD
+   0.20  progress bar starts, waveform wakes up                                  drone
+   0.40  "Captions that land"            each word lights up as it is said        a tick per word
+   1.55  "on every word,"                a new page pops in                       pop
+   2.60  "timed to the voice,"
+   3.85  "made in code."
+   5.00  the waveform settles, the handle stays                                  pad
+   6.00  end
+-->
+<style>
+  @font-face { font-family: "IDRA"; src: url("/fonts/Inter-opsz.woff2") format("woff2"); font-weight: 100 900; }
+  html, body { margin: 0; background: #000; overflow: hidden; height: 100%; }
+  #stage { position: absolute; left: 0; top: 0; overflow: hidden; background: #0b0b10;
+    font-family: "IDRA", system-ui, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
+  .abs { position: absolute; white-space: nowrap; }
+  #glow { position: absolute; inset: 0; }
+  .wave { position: absolute; bottom: 0; width: 22px; border-radius: 11px; background: #fff; }
+  #caps { position: absolute; left: 70px; right: 70px; top: 1180px; text-align: center; font-size: 104px; font-weight: 850;
+    line-height: 1.12; letter-spacing: -0.03em; white-space: normal; }
+  #caps span { display: inline-block; margin: 0 0.12em; padding: 0 0.12em; border-radius: 0.18em; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="glow"></div>
+  <div class="abs" style="left:60px;right:60px;top:90px;height:8px;border-radius:4px;background:rgba(255,255,255,.18)"></div>
+  <div class="abs" id="progress" style="left:60px;top:90px;height:8px;border-radius:4px;background:#fff;width:0"></div>
+  <div class="abs" id="wave" style="left:0;right:0;top:560px;height:360px"></div>
+  <div id="caps"></div>
+  <div class="abs" id="handle" style="left:0;right:0;top:1740px;text-align:center;font-size:40px;font-weight:650;color:rgba(255,255,255,.65)"></div>
+</div>
+<script type="module">
+import { clamp, lerp, seg, ease, easeOut, spring, rng, $, $$, esc } from "/engine/motion.js";
+import { mix, PROGRESSION } from "/engine/sound.js";
+import { film } from "/engine/stage.js";
+
+const WIDTH = 1080, HEIGHT = 1920, DURATION = 6;
+const TITLE = "@idra-motion";
+// [word, when it is said]. Pages of a few words; a page shows from its first word to the next page.
+const PAGES = [
+  [["Captions", 0.4], ["that", 0.78], ["land", 1.02]],
+  [["on", 1.55], ["every", 1.74], ["word,", 2.06]],
+  [["timed", 2.6], ["to", 2.92], ["the", 3.06], ["voice,", 3.24]],
+  [["made", 3.85], ["in", 4.12], ["code.", 4.3]]
+];
+const LIT = "#ffd60a", BARS = 28;
+const SPEECH = [0.4, 4.75];   // the waveform moves while someone is talking
+
+const stage = $("#stage");
+stage.style.width = `${WIDTH}px`;
+stage.style.height = `${HEIGHT}px`;
+$("#handle").textContent = TITLE;
+const r = rng(5);
+const WAVE = Array.from({ length: BARS }, (_, i) => ({ x: 540 + (i - (BARS - 1) / 2) * 34 - 11, f1: 3 + r() * 5, f2: 7 + r() * 9, ph: r() * 6.28, amp: 0.45 + 0.55 * Math.sin((i / (BARS - 1)) * Math.PI) }));
+$("#wave").innerHTML = WAVE.map((w) => `<div class="wave" style="left:${w.x}px"></div>`).join("");
+const E = Object.fromEntries($$("[id]").map((el) => [el.id, el]));
+const bars = $$(".wave");
+let shown = -1;
+
+function draw(t) {
+  // A slow glow that drifts behind everything.
+  const gx = 50 + 18 * Math.sin(t * 0.7), gy = 35 + 10 * Math.cos(t * 0.5);
+  E.glow.style.background = `radial-gradient(900px 900px at ${gx}% ${gy}%, rgba(47,84,255,.55), transparent 70%), radial-gradient(700px 700px at ${100 - gx}% ${80 - gy / 2}%, rgba(255,77,46,.28), transparent 70%)`;
+  E.progress.style.width = `${(WIDTH - 120) * clamp(t / DURATION)}px`;
+
+  // The waveform: loud while words are being said, a gentle idle otherwise.
+  const talking = clamp(Math.min(seg(t, SPEECH[0] - 0.2, SPEECH[0]), 1 - seg(t, SPEECH[1], SPEECH[1] + 0.4)));
+  bars.forEach((el, i) => {
+    const w = WAVE[i], level = 0.5 + 0.5 * Math.sin(t * w.f1 + w.ph) * Math.sin(t * w.f2 + w.ph * 2);
+    el.style.height = `${22 + w.amp * (40 + 300 * level * talking)}px`;
+    el.style.bottom = `${(360 - (22 + w.amp * (40 + 300 * level * talking))) / 2}px`;
+    el.style.opacity = 0.35 + 0.65 * talking;
+  });
+
+  // The caption page that is on screen now, and which of its words are said.
+  let page = -1;
+  for (let p = 0; p < PAGES.length; p += 1) if (t >= PAGES[p][0][1] - 0.05) page = p;
+  if (page !== shown) {
+    E.caps.innerHTML = page < 0 ? "" : PAGES[page].map(([w]) => `<span>${esc(w)}</span>`).join("");
+    shown = page;
+  }
+  if (page < 0) return;
+  const words = $$("#caps span"), start = PAGES[page][0][1];
+  const pop = spring(t - (start - 0.05), 18, 0.62);
+  E.caps.style.transform = `translateY(${lerp(30, 0, pop)}px) scale(${lerp(0.92, 1, pop)})`;
+  E.caps.style.opacity = clamp(pop * 2);
+  PAGES[page].forEach(([, at], i) => {
+    const next = PAGES[page][i + 1]?.[1] ?? (PAGES[page + 1]?.[0][1] ?? DURATION) - 0.05;
+    const now = t >= at && t < next, said = t >= at;
+    const k = spring(t - at, 22, 0.55);
+    words[i].style.color = now ? "#000" : said ? "#fff" : "rgba(255,255,255,.35)";
+    words[i].style.background = now ? LIT : "transparent";
+    words[i].style.transform = `scale(${now ? lerp(1.18, 1.06, k) : 1})`;
+  });
+}
+
+async function sound(ctx) {
+  const m = mix(ctx);
+  m.drone(0, 1.2);
+  await Promise.all([
+    ...PAGES.map((p) => m.sfx("pop", p[0][1] - 0.04, 0.22, 1.0)),
+    ...PAGES.flat().map(([, at], i) => m.sfx("tick", at, 0.12, 0.9 + (i % 4) * 0.08))
+  ]);
+  m.pad(0.3, 1.9, DURATION, PROGRESSION.slice(4, 7));
+}
+
+film({ width: WIDTH, height: HEIGHT, duration: DURATION, draw, sound, fonts: ["650 40px IDRA", "850 40px IDRA"] });
+</script>
+</body>
+</html>

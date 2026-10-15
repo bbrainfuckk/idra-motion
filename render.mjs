@@ -4,6 +4,7 @@
 //   node render.mjs <scene.html> <out.mp4> [--fps 30] [--workers 4] [--subframes 1] [--crf 15] [--lufs -16]
 //   node render.mjs <scene.html> <sheet.jpg> --stills 0.5,2.1,4.8     contact sheet (frames kept in <sheet>.frames/)
 //   node render.mjs <scene.html> <mix.wav> --audio [vo|sfx|music]     the soundtrack only, before loudness
+//   node render.mjs <scene.html> <clip.gif> --fps 20 [--width 960]     a looping GIF, no sound (READMEs, chats)
 //
 //   --root <dir>         folder served at / (default: this repo). /engine, /sfx and /fonts always resolve
 //                        to this repo's copies when the root doesn't have its own.
@@ -157,6 +158,8 @@ try {
 
   if (flags.stills) {
     const times = flags.stills.split(",").map(Number), dir = out + ".frames";
+    // Start from an empty folder: frames left by an earlier, longer run would end up in the sheet.
+    rmSync(dir, { recursive: true, force: true });
     mkdirSync(dir, { recursive: true });
     for (let i = 0; i < times.length; i += 1) writeFileSync(join(dir, `${String(i).padStart(3, "0")}.jpg`), await first.shot(times[i], 90));
     const cols = Math.min(3, times.length), rows = Math.ceil(times.length / cols);
@@ -174,7 +177,8 @@ try {
   }
 
   const fps = Number(flags.fps), workers = Math.max(1, Number(flags.workers)), sub = Math.max(1, Number(flags.subframes)), N = Math.round(V.duration * fps);
-  const base = out.replace(/\.mp4$/i, ""), silent = `${base}_silent.mp4`;
+  const gif = /\.gif$/i.test(out);
+  const base = out.replace(/\.(mp4|gif)$/i, ""), silent = `${base}_silent.mp4`;
   // Motion blur: sub-frames spread over half a frame (a 180 degree shutter), averaged into one.
   const blur = sub > 1 ? ["-vf", `tmix=frames=${sub},select='eq(mod(n\\,${sub})\\,${sub - 1})',setpts=N/(${fps}*TB)`] : [];
   const started = Date.now();
@@ -205,6 +209,17 @@ try {
   parts.filter(Boolean).forEach((p) => rmSync(p));
   rmSync(list);
   console.log(`\npicture -> ${silent}  (${((Date.now() - started) / 1000).toFixed(0)} s)`);
+
+  // A GIF: no sound, one palette built from the whole clip, ordered dithering so flat colours stay flat.
+  if (gif) {
+    const width = Math.round(Number(flags.width || 960));
+    await run(["-v", "error", "-y", "-i", silent, "-vf",
+      `scale=${width}:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=192:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle`,
+      "-loop", "0", out]);
+    rmSync(silent);
+    console.log(`gif -> ${out}  (${(statSync(out).size / 1048576).toFixed(1)} MB)`);
+    await finish();
+  }
 
   // Sound: measure the page's mix, move it to the target loudness with one fixed gain (no pumping),
   // and catch any peak above -2 dBFS with a limiter.

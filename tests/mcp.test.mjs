@@ -79,6 +79,20 @@ try {
   check("job_status finishes the render", !done.isError && /Video: .*launch-draft\.mp4/.test(say(done)) && existsSync(mp4) && statSync(mp4).size > 20000, say(done));
   check("render sends progress notifications", notes.some((n) => n.method === "notifications/progress"));
 
+  // Every style starts a scene with its title, and every example scene still renders.
+  const kin = join(work, "teaser");
+  await tool("new_scene", { folder: kin, style: "kinetic", title: "Acme" });
+  const kinHtml = existsSync(join(kin, "scene.html")) ? readFileSync(join(kin, "scene.html"), "utf8") : "";
+  check("new_scene starts from a style with your title", kinHtml.includes('const TITLE = "Acme";') && kinHtml.includes("<title>Acme</title>") && kinHtml.includes("one huge word per beat"));
+  check("new_scene names the styles when one is unknown", /Styles: starter/.test(say(await tool("new_scene", { folder: join(work, "x"), style: "nope" }))));
+  for (const style of ["starter", "kinetic", "product-demo", "numbers", "vertical", "hello"]) {
+    const r = await tool("stills", { scene: join(REPO, "examples", style, "scene.html"), times: [1.5], out: join(work, `ex-${style}.jpg`) });
+    check(`example ${style} renders`, !r.isError && r.content.some((c) => c.type === "image"), say(r));
+  }
+  const gifRun = await tool("render", { scene, quality: "gif", width: 480, wait_seconds: 120 });
+  const gifFile = join(folder, "out", "launch-gif.gif");
+  check("render quality gif writes a GIF", !gifRun.isError && existsSync(gifFile) && readFileSync(gifFile).subarray(0, 6).toString() === "GIF89a", say(gifRun));
+
   const snd = await tool("soundtrack", { scene, bus: "music" });
   check("soundtrack writes a WAV", !snd.isError && existsSync(join(folder, "out", "launch-music.wav")), say(snd));
 

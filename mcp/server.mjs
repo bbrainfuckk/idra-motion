@@ -37,7 +37,13 @@ const GUIDES = {
   starter: { title: "The starter scene new_scene copies (examples/starter)", text: () => read("examples/starter/scene.html") }
 };
 
-const ONE_SHOT = ({ product, length = "about 45 seconds", notes = "" }) => `Make a launch trailer for ${product} with idra-motion.
+// The example scenes new_scene can start from.
+const STYLES = {
+  starter: "examples/starter/scene.html", kinetic: "examples/kinetic/scene.html", "product-demo": "examples/product-demo/scene.html",
+  numbers: "examples/numbers/scene.html", vertical: "examples/vertical/scene.html", explainer: "examples/hello/scene.html"
+};
+
+const ONE_SHOT =({ product, length = "about 45 seconds", notes = "" }) => `Make a launch trailer for ${product} with idra-motion.
 
 Length ${length}, 16:9 1920 x 1080, with narration. Use the product's own name, logo, colours and font, and only say what the product really does (its own site or store listing is the source).
 
@@ -263,29 +269,33 @@ const TOOLS = [
   {
     name: "new_scene",
     title: "Start a new video scene",
-    description: "Create a new scene: copies the starter scene (title, typed line, camera drift, sound) into <folder>/scene.html with your title, length and size. Then edit scene.html: beat sheet first, then one time window per beat inside draw(t).",
+    description: "Create a new scene in <folder>/scene.html from one of the styles, then edit it: beat sheet first, then one time window per beat inside draw(t). Styles: starter (title, typed line, camera drift; any size and length), kinetic (one huge word per beat, hard colour cuts), product-demo (an app rebuilt in HTML: typing, cursor clicks, results, a detail panel), numbers (a stat that rolls up, bars, a trend line, a highlight), vertical (9:16 with word-by-word captions), explainer (the finished 10 s example).",
     inputSchema: {
       type: "object", required: ["folder"],
       properties: {
         folder: { type: "string", description: "Full path of the folder to create the scene in (made if missing)." },
-        title: { type: "string", description: "The title shown in the starter (default 'Your product')." },
-        duration: { type: "number", description: "Length in seconds (default 8)." },
-        width: { type: "number", description: "Frame width in pixels (default 1920)." },
-        height: { type: "number", description: "Frame height in pixels (default 1080; 1920 x 1080 for vertical use width 1080, height 1920)." },
+        style: { type: "string", enum: Object.keys(STYLES), description: "Which example to start from (default starter)." },
+        title: { type: "string", description: "The scene's title or product name (default 'Your product')." },
+        duration: { type: "number", description: "starter only: length in seconds (default 8). The other styles keep their timing tables; change those together." },
+        width: { type: "number", description: "starter only: frame width in pixels (default 1920)." },
+        height: { type: "number", description: "starter only: frame height (default 1080; for 9:16 use width 1080, height 1920, or the vertical style)." },
         overwrite: { type: "boolean", description: "Replace an existing scene.html (default false)." }
       }
     },
-    async run({ folder, title = "Your product", duration = 8, width = 1920, height = 1080, overwrite = false }) {
+    async run({ folder, style = "starter", title = "Your product", duration = 8, width = 1920, height = 1080, overwrite = false }) {
+      const source = STYLES[style];
+      if (!source) throw new Error(`Unknown style ${style}. Styles: ${Object.keys(STYLES).join(", ")}.`);
       const dir = abs(folder), file = join(dir, "scene.html");
       if (existsSync(file) && !overwrite) throw new Error(`${file} already exists. Pass overwrite: true to replace it, or edit it.`);
       mkdirSync(dir, { recursive: true });
-      const json = (s) => JSON.stringify(String(s));
-      const html = read("examples/starter/scene.html")
-        .replace("<title>idra-motion: starter</title>", `<title>${String(title).replace(/</g, "&lt;")}</title>`)
-        .replace("const WIDTH = 1920, HEIGHT = 1080, DURATION = 8;", `const WIDTH = ${Math.round(width)}, HEIGHT = ${Math.round(height)}, DURATION = ${Number(duration)};`)
-        .replace('const TITLE = "Your product";', `const TITLE = ${json(title)};`);
+      const json = (v) => JSON.stringify(String(v));
+      let html = read(source).replace(/<title>[^<]*<\/title>/, () => `<title>${String(title).replace(/</g, "&lt;")}</title>`);
+      if (style !== "explainer") html = html.replace(/const TITLE = "[^"\n]*";/, () => `const TITLE = ${json(title)};`);
+      if (style === "starter") html = html.replace("const WIDTH = 1920, HEIGHT = 1080, DURATION = 8;", () => `const WIDTH = ${Math.round(width)}, HEIGHT = ${Math.round(height)}, DURATION = ${Number(duration)};`);
       writeFileSync(file, html);
-      return { content: [text(`Created ${file} (${Math.round(width)} x ${Math.round(height)}, ${Number(duration)} s).\nNext: write the beat sheet in its comment, build draw(t) beat by beat (guide topic 'engine' for the API, 'example' for a finished scene), then check with stills. preview gives a browser link to scrub it.`)] };
+      const size = (html.match(/const WIDTH = (\d+), HEIGHT = (\d+), DURATION = ([\d.]+);/) || []).slice(1);
+      const what = size.length ? ` (${size[0]} x ${size[1]}, ${size[2]} s)` : "";
+      return { content: [text(`Created ${file} from the ${style} style${what}.\nNext: rewrite the beat sheet in its comment for your video, change the tables and text, then check with stills (guide topic 'engine' for the API, 'example' for a finished scene). preview gives a browser link to scrub it.`)] };
     }
   },
   {
@@ -324,27 +334,29 @@ const TOOLS = [
   {
     name: "render",
     title: "Render the video",
-    description: "Render the scene to MP4 with its soundtrack at -16 LUFS. quality: draft (30 fps, quick), master (60 fps with motion blur, slow), web (30 fps, small file for uploads). Long renders return a job id; call job_status to wait.",
+    description: "Render the scene to MP4 with its soundtrack at -16 LUFS. quality: draft (30 fps, quick), master (60 fps with motion blur, slow), web (30 fps, small file for uploads), gif (a silent looping GIF for a README or a chat, 20 fps). Long renders return a job id; call job_status to wait.",
     inputSchema: {
       type: "object", required: ["scene"],
       properties: {
         scene: SCENE,
-        quality: { type: "string", enum: ["draft", "master", "web"], description: "Default draft." },
-        out: { type: "string", description: "Where to save the .mp4. Default: <scene folder>/out/<name>-<quality>.mp4." },
+        quality: { type: "string", enum: ["draft", "master", "web", "gif"], description: "Default draft." },
+        width: { type: "number", description: "gif only: width in pixels (default 960; try 400 for a vertical scene)." },
+        out: { type: "string", description: "Where to save it (.mp4, or .gif for quality gif). Default: <scene folder>/out/<name>-<quality>.mp4 (.gif)." },
         fps: { type: "number" }, subframes: { type: "number", description: "Motion blur samples per frame." }, crf: { type: "number", description: "Quality, lower is better (15 master, 23 web)." },
         workers: { type: "number", description: "Browser windows filming at once (default 4)." },
         set: { type: "object", additionalProperties: { type: "string" }, description: "Values added to the page URL, e.g. {\"voice\": \"matilda\"}." },
         root: ROOT, wait_seconds: WAIT
       }
     },
-    async run({ scene, quality = "draft", out, fps, subframes, crf, workers, set = {}, root, wait_seconds }, progressToken) {
-      const preset = { draft: { fps: 30, subframes: 1, crf: 18 }, master: { fps: 60, subframes: 4, crf: 15 }, web: { fps: 30, subframes: 2, crf: 23 } }[quality];
-      if (!preset) throw new Error("quality must be draft, master or web.");
-      const s = sceneOf(scene), mp4 = outFor(s, `${quality}.mp4`, out);
+    async run({ scene, quality = "draft", out, fps, subframes, crf, workers, width, set = {}, root, wait_seconds }, progressToken) {
+      const preset = { draft: { fps: 30, subframes: 1, crf: 18 }, master: { fps: 60, subframes: 4, crf: 15 }, web: { fps: 30, subframes: 2, crf: 23 }, gif: { fps: 20, subframes: 2, crf: 18 } }[quality];
+      if (!preset) throw new Error("quality must be draft, master, web or gif.");
+      const s = sceneOf(scene), mp4 = outFor(s, `${quality}.${quality === "gif" ? "gif" : "mp4"}`, out);
       const args = [join(REPO, "render.mjs"), s, mp4, "--fps", fps ?? preset.fps, "--subframes", subframes ?? preset.subframes, "--crf", crf ?? preset.crf, "--root", rootOf(s, root)];
       if (workers) args.push("--workers", workers);
+      if (quality === "gif") args.push("--width", width ?? 960);
       for (const [k, v] of Object.entries(set)) args.push("--set", `${k}=${v}`);
-      const job = start("render", args.map(String), { finish: async (j) => ({ content: [text(`Video: ${mp4} (${mb(mp4)}, rendered in ${secs(j)} s).\n${tail(j).split("\n").filter((l) => /LUFS|no sound/.test(l)).join("\n")}`)] }) });
+      const job = start("render", args.map(String), { finish: async (j) => ({ content: [text(`${quality === "gif" ? "GIF" : "Video"}: ${mp4} (${mb(mp4)}, rendered in ${secs(j)} s).\n${tail(j).split("\n").filter((l) => /LUFS|no sound/.test(l)).join("\n")}`)] }) });
       await settle(job, wait_seconds, progressToken);
       return report(job);
     }

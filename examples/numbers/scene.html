@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>idra-motion: numbers</title>
+<!--
+  Numbers: a headline stat that rolls up, bars that grow with their values counting, a trend line
+  that draws itself, then a highlight on the best result. For results, launches, reports and pitch
+  videos. Replace the data table and the labels; every timing reads from the same table.
+
+  BEAT SHEET (seconds)                                                           HEARD
+   0.20  both cards rise into place                                              whoosh
+   0.60  the stat rolls from 0 to 12,480; "+38%" pops in when it lands (2.35)    ticks, pop
+   1.00  six bars grow one after another, each value counting up                 pops
+   2.60  the trend line draws itself across the bar tops, a dot lands on each    riser
+   3.70  the best bar turns blue, a ring pulses out from it, "Best week" pops    impact, pop
+   6.00  end
+-->
+<style>
+  @font-face { font-family: "IDRA"; src: url("/fonts/Inter-opsz.woff2") format("woff2"); font-weight: 100 900; }
+  html, body { margin: 0; background: #000; overflow: hidden; height: 100%; }
+  #stage { position: absolute; left: 0; top: 0; overflow: hidden; background: #f2f2f6;
+    font-family: "IDRA", system-ui, sans-serif; color: #1d1d1f; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
+  #stage * { box-sizing: border-box; }
+  .cam { position: absolute; inset: 0; transform-origin: 0 0; }
+  .abs { position: absolute; white-space: nowrap; }
+  .card { position: absolute; background: #fff; border-radius: 30px; box-shadow: 0 1px 3px rgba(0,0,0,.05), 0 24px 70px rgba(0,0,0,.10); }
+  .label { font-size: 24px; font-weight: 600; color: #8e8e93; }
+  .bar { position: absolute; bottom: 120px; width: 96px; border-radius: 14px 14px 6px 6px; background: #d5dcff; transform-origin: 50% 100%; }
+  .val { position: absolute; width: 96px; text-align: center; font-size: 22px; font-weight: 700; }
+  .wk { position: absolute; bottom: 70px; width: 96px; text-align: center; font-size: 20px; font-weight: 600; color: #8e8e93; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="cam" id="cam">
+    <div class="card" id="statCard" style="left:150px;top:190px;width:560px;height:700px">
+      <div class="abs label" style="left:56px;top:60px">Videos rendered</div>
+      <div class="abs" id="stat" style="left:52px;top:110px;font-size:120px;font-weight:800;letter-spacing:-0.045em">0</div>
+      <div class="abs" id="chip" style="left:56px;top:270px;height:52px;padding:0 22px;border-radius:26px;background:#e3f6ea;color:#1b8a4b;font-size:24px;font-weight:700;line-height:52px">+38% this month</div>
+      <div class="abs label" style="left:56px;top:470px">Average render</div>
+      <div class="abs" id="avg" style="left:54px;top:510px;font-size:64px;font-weight:750;letter-spacing:-0.03em">0.0 s</div>
+    </div>
+    <div class="card" id="chartCard" style="left:760px;top:190px;width:1010px;height:700px">
+      <div class="abs label" style="left:56px;top:60px">Weekly renders</div>
+      <div id="bars"></div>
+      <svg class="abs" id="lineSvg" style="left:0;top:0" width="1010" height="700"><path id="line" fill="none" stroke="#2f54ff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><g id="dots"></g></svg>
+      <div class="abs" id="ring" style="width:150px;height:150px;border-radius:50%;border:5px solid #2f54ff"></div>
+      <div class="abs" id="tip" style="height:54px;padding:0 24px;border-radius:27px;background:#1d1d1f;color:#fff;font-size:22px;font-weight:650;line-height:54px">Best week</div>
+    </div>
+  </div>
+</div>
+<script type="module">
+import { clamp, lerp, seg, ease, easeOut, spring, vis, cam, count, $, $$ } from "/engine/motion.js";
+import { mix, PROGRESSION } from "/engine/sound.js";
+import { film } from "/engine/stage.js";
+
+const WIDTH = 1920, HEIGHT = 1080, DURATION = 6;
+const TITLE = "Videos rendered";
+const STAT = [0.6, 2.3, 12480];           // rolls from 0.6 s to 2.3 s
+const DATA = [["W1", 1180], ["W2", 1640], ["W3", 1420], ["W4", 2210], ["W5", 2980], ["W6", 2650]];
+const BARS_AT = 1.0, BAR_GAP = 0.14, LINE = [2.6, 3.5], BEST = 3.7;
+const MAX = 3200, CHART_H = 420, X0 = 110, STEP = 140;
+
+const stage = $("#stage");
+stage.style.width = `${WIDTH}px`;
+stage.style.height = `${HEIGHT}px`;
+$$(".label")[0].textContent = TITLE;
+$("#bars").innerHTML = DATA.map(([wk], i) => `<div class="bar" style="left:${X0 + i * STEP}px"></div><div class="val" style="left:${X0 + i * STEP}px"></div><div class="wk" style="left:${X0 + i * STEP}px">${wk}</div>`).join("");
+const E = Object.fromEntries($$("[id]").map((el) => [el.id, el]));
+const bars = $$(".bar"), vals = $$(".val");
+const best = DATA.reduce((b, d, i) => (d[1] > DATA[b][1] ? i : b), 0);
+const top = (v) => 700 - 120 - (v / MAX) * CHART_H;            // y of a bar's top inside the chart card
+const PTS = DATA.map(([, v], i) => [X0 + 48 + i * STEP, top(v)]);
+E.line.setAttribute("d", PTS.map(([x, y], i) => `${i ? "L" : "M"}${x} ${y}`).join(" "));
+const LEN = E.line.getTotalLength();
+E.line.style.strokeDasharray = `${LEN}`;
+$("#dots").innerHTML = PTS.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="0" fill="#fff" stroke="#2f54ff" stroke-width="5"/>`).join("");
+const dots = $$("#dots circle");
+
+function draw(t) {
+  cam(E.cam, 960, 540, lerp(1.04, 1, ease(seg(t, 0, 2.5))) * lerp(1, 1.04, ease(seg(t, BEST - 0.2, DURATION))));
+  [E.statCard, E.chartCard].forEach((el, i) => {
+    const k = spring(t - (0.2 + i * 0.1), 11, 0.85);
+    el.style.opacity = clamp(k * 1.6);
+    el.style.transform = `translateY(${lerp(80, 0, k)}px)`;
+  });
+
+  E.stat.textContent = count(t, STAT[0], STAT[1], 0, STAT[2]).toLocaleString("en-US");
+  E.avg.textContent = `${(count(t, STAT[0], STAT[1], 0, 41) / 10).toFixed(1)} s`;
+  const chip = spring(t - (STAT[1] + 0.05), 16, 0.6);
+  E.chip.style.opacity = clamp(chip * 2);
+  E.chip.style.transform = `scale(${lerp(0.6, 1, chip)})`;
+
+  DATA.forEach(([, v], i) => {
+    const at = BARS_AT + i * BAR_GAP, k = spring(t - at, 12, 0.8);
+    const h = (v / MAX) * CHART_H * k;
+    bars[i].style.height = `${Math.max(0, h)}px`;
+    bars[i].style.background = i === best && t >= BEST ? "#2f54ff" : "#d5dcff";
+    vals[i].textContent = count(t, at, at + 0.6, 0, v).toLocaleString("en-US");
+    vals[i].style.top = `${700 - 120 - h - 40}px`;
+    vals[i].style.opacity = clamp((t - at) * 6);
+  });
+
+  const drawn = ease(seg(t, LINE[0], LINE[1]));
+  E.line.style.strokeDashoffset = `${LEN * (1 - drawn)}`;
+  // Each dot springs in as the line reaches it.
+  dots.forEach((d, i) => {
+    const reach = LINE[0] + (LINE[1] - LINE[0]) * (i / (PTS.length - 1)) * 0.9;
+    d.setAttribute("r", String(Math.max(0, 9 * spring(t - reach, 18, 0.6))));
+  });
+  vis(E.lineSvg, t >= LINE[0] ? 1 : 0);
+
+  const bx = X0 + best * STEP + 48, by = top(DATA[best][1]) + 20;
+  // A ring pulses out from the best bar once and fades, leaving the frame clean.
+  const pulse = seg(t, BEST, BEST + 0.7);
+  vis(E.ring, t >= BEST && pulse < 1 ? (1 - easeOut(pulse)) : 0);
+  E.ring.style.left = `${bx - 75}px`;
+  E.ring.style.top = `${by - 75}px`;
+  E.ring.style.transform = `scale(${lerp(0.5, 1.9, easeOut(pulse))})`;
+  const tip = spring(t - (BEST + 0.25), 15, 0.7);
+  vis(E.tip, t >= BEST + 0.25 ? clamp(tip * 2) : 0);
+  E.tip.style.left = `${bx - 80}px`;
+  E.tip.style.top = `${by - 135}px`;
+  E.tip.style.transform = `translateY(${lerp(20, 0, tip)}px)`;
+}
+
+async function sound(ctx) {
+  const m = mix(ctx);
+  await Promise.all([
+    m.sfx("whoosh", 0.1, 0.35, 1.0),
+    m.keys(STAT[0], 34, 20, 0.12),
+    m.sfx("pop", STAT[1] + 0.05, 0.4, 1.1),
+    ...DATA.map((_, i) => m.sfx("pop", BARS_AT + i * BAR_GAP + 0.03, 0.2, 0.85 + i * 0.06)),
+    m.sfx("riser", LINE[0] - 0.4, 0.3),
+    m.sfx("impact", BEST, 0.55, 1.1),
+    m.sfx("pop", BEST + 0.28, 0.35, 0.9)
+  ]);
+  m.pad(0.4, 1.9, DURATION, PROGRESSION.slice(0, 4));
+}
+
+film({ width: WIDTH, height: HEIGHT, duration: DURATION, draw, sound, fonts: ["600 40px IDRA", "650 40px IDRA", "700 40px IDRA", "750 40px IDRA", "800 40px IDRA"] });
+</script>
+</body>
+</html>

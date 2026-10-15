@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>idra-motion: product demo</title>
+<!--
+  Product demo: the product's interface rebuilt in HTML at full size and used on camera. Every field
+  types itself at an exact time and the camera lands on the part that matters. Swap in your own
+  screens, logo and font; keep made-up people and data.
+
+  BEAT SHEET (seconds)                                                           HEARD
+   0.20  the app window springs up                                               whoosh
+   0.90  the cursor travels to the search field and clicks (1.30)                click
+   1.40  "motion graphics" types itself                                          key ticks
+   2.55  four results spring in, one after another                               pops
+   3.40  the cursor clicks the second result (3.85); it highlights               click
+   4.00  the camera pushes in; a detail panel slides in from the right           whoosh
+   4.60  the cursor clicks Save; "Saved to your library" pops up (4.75)          click, pop
+   6.00  end
+-->
+<style>
+  @font-face { font-family: "IDRA"; src: url("/fonts/Inter-opsz.woff2") format("woff2"); font-weight: 100 900; }
+  html, body { margin: 0; background: #000; overflow: hidden; height: 100%; }
+  #stage { position: absolute; left: 0; top: 0; overflow: hidden; background: #e9e9ee;
+    font-family: "IDRA", system-ui, sans-serif; color: #1d1d1f; -webkit-font-smoothing: antialiased; }
+  #stage * { box-sizing: border-box; }
+  .cam { position: absolute; inset: 0; transform-origin: 0 0; }
+  .abs { position: absolute; white-space: nowrap; }
+  .win { position: absolute; left: 260px; top: 150px; width: 1400px; height: 780px; border-radius: 26px; background: #fff; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 30px 80px rgba(0,0,0,.16); }
+  .bar { position: absolute; left: 0; right: 0; top: 0; height: 64px; border-bottom: 1px solid #ececf0; }
+  .dot { position: absolute; top: 24px; width: 14px; height: 14px; border-radius: 50%; background: #d8d8de; }
+  .side { position: absolute; left: 0; top: 64px; bottom: 0; width: 250px; background: #fafafc; border-right: 1px solid #ececf0; }
+  .nav { position: absolute; left: 28px; height: 18px; border-radius: 9px; background: #e6e6eb; }
+  .search { position: absolute; left: 300px; top: 104px; width: 640px; height: 64px; border-radius: 16px; background: #f2f2f6;
+    font-size: 26px; font-weight: 500; line-height: 64px; padding-left: 64px; color: #1d1d1f; }
+  .row { position: absolute; left: 300px; width: 640px; height: 92px; border-radius: 18px; }
+  .thumb { position: absolute; left: 18px; top: 16px; width: 104px; height: 60px; border-radius: 10px; }
+  .t1 { position: absolute; left: 142px; top: 18px; font-size: 24px; font-weight: 650; }
+  .t2 { position: absolute; left: 142px; top: 52px; font-size: 19px; font-weight: 500; color: #8e8e93; }
+  .panel { position: absolute; left: 990px; top: 104px; width: 370px; height: 630px; border-radius: 22px; background: #f7f7fa; }
+  .caret { display: inline-block; width: 2px; height: 1em; background: #2f54ff; margin-left: 2px; vertical-align: -0.12em; }
+  .toast { position: absolute; left: 50%; top: 820px; width: 420px; margin-left: -210px; height: 72px; border-radius: 36px; background: #1d1d1f; color: #fff;
+    font-size: 24px; font-weight: 600; line-height: 72px; text-align: center; }
+  .cursor { position: absolute; left: 0; top: 0; width: 40px; height: 52px; filter: drop-shadow(0 3px 5px rgba(0,0,0,.3)); transform-origin: 3px 2px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="cam" id="cam">
+    <div class="win" id="win">
+      <div class="bar"><div class="dot" style="left:24px"></div><div class="dot" style="left:48px"></div><div class="dot" style="left:72px"></div>
+        <div class="abs" id="appName" style="left:0;right:0;top:20px;text-align:center;font-size:20px;font-weight:650;color:#6e6e73"></div></div>
+      <div class="side">
+        <div class="nav" style="top:40px;width:150px;background:#2f54ff;opacity:.9"></div><div class="nav" style="top:84px;width:120px"></div>
+        <div class="nav" style="top:128px;width:170px"></div><div class="nav" style="top:172px;width:100px"></div>
+      </div>
+      <div class="search" id="search"><svg class="abs" style="left:22px;top:20px" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="7"/><path d="M16 16l5 5"/></svg><span id="query"></span></div>
+      <div id="rows"></div>
+      <div class="panel" id="panel">
+        <div class="abs" id="panelThumb" style="left:24px;top:24px;width:322px;height:190px;border-radius:14px"></div>
+        <div class="abs" style="left:24px;top:240px;font-size:28px;font-weight:700">Launch teaser</div>
+        <div class="abs" style="left:24px;top:282px;font-size:20px;font-weight:500;color:#8e8e93">0:15 &middot; 1920 x 1080 &middot; 60 fps</div>
+        <div class="abs" style="left:24px;top:340px;width:322px;height:12px;border-radius:6px;background:#e5e5ea"></div>
+        <div class="abs" style="left:24px;top:368px;width:250px;height:12px;border-radius:6px;background:#e5e5ea"></div>
+        <div class="abs" id="save" style="left:24px;top:540px;width:322px;height:64px;border-radius:32px;background:#2f54ff;color:#fff;font-size:22px;font-weight:650;line-height:64px;text-align:center">Save</div>
+      </div>
+    </div>
+    <div class="toast" id="toast">Saved to your library</div>
+    <svg class="cursor" id="cursor" viewBox="0 0 17 22"><path d="M1.2 1.2v16l4.2-3.9 2.7 6.2 2.5-1.1-2.7-6.1h5.9z" fill="#000" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/></svg>
+  </div>
+</div>
+<script type="module">
+import { clamp, lerp, seg, ease, easeOut, spring, vis, tf, cam, typed, $, $$ } from "/engine/motion.js";
+import { mix, PROGRESSION } from "/engine/sound.js";
+import { film } from "/engine/stage.js";
+
+const WIDTH = 1920, HEIGHT = 1080, DURATION = 6;
+const TITLE = "Studio";
+const QUERY = "motion graphics", QUERY_AT = 1.4, QUERY_CPS = 14;
+const CLICK_FIELD = 1.3, ROWS_AT = 2.55, CLICK_ROW = 3.85, PANEL = 4.0, CLICK_SAVE = 4.6, TOAST = 4.75;
+const RESULTS = [
+  ["Product walkthrough", "0:45 · 3 scenes", "#dfe5ff"], ["Launch teaser", "0:15 · kinetic type", "#2f54ff"],
+  ["Feature explainer", "1:10 · narrated", "#ffe1d6"], ["Social cut, vertical", "0:20 · captions", "#d9f2e3"]
+];
+// The cursor's path: [time, x, y] in the window's coordinates on stage.
+const PATH = [[0.9, 1500, 980], [CLICK_FIELD - 0.02, 640, 290], [3.4, 640, 290], [CLICK_ROW - 0.02, 760, 515], [4.0, 760, 515], [CLICK_SAVE - 0.03, 1432, 818]];
+
+const stage = $("#stage");
+stage.style.width = `${WIDTH}px`;
+stage.style.height = `${HEIGHT}px`;
+$("#appName").textContent = TITLE;
+$("#rows").innerHTML = RESULTS.map(([a, b, c], i) => `<div class="row" style="top:${200 + i * 104}px"><div class="thumb" style="background:${c}"></div><div class="t1">${a}</div><div class="t2">${b}</div></div>`).join("");
+$("#panelThumb").style.background = RESULTS[1][2];
+const E = Object.fromEntries($$("[id]").map((el) => [el.id, el]));
+const rows = $$(".row");
+
+function cursorAt(t) {
+  for (let i = 1; i < PATH.length; i += 1) {
+    const [a, ax, ay] = PATH[i - 1], [b, bx, by] = PATH[i];
+    if (t <= b) { const k = ease(seg(t, a, b)); return [lerp(ax, bx, k), lerp(ay, by, k)]; }
+  }
+  return PATH[PATH.length - 1].slice(1);
+}
+
+function draw(t) {
+  // The window arrives, then the camera pushes in toward the detail panel.
+  const arrive = spring(t - 0.2, 11, 0.85);
+  E.win.style.opacity = clamp(arrive * 1.8);
+  E.win.style.transform = `translateY(${lerp(60, 0, arrive)}px) scale(${lerp(0.94, 1, arrive)})`;
+  const push = ease(seg(t, PANEL, PANEL + 1.1));
+  cam(E.cam, lerp(960, 980, push), lerp(540, 545, push), lerp(1, 1.22, push));
+
+  // The search field focuses on the click, then the query types itself.
+  const focus = t >= CLICK_FIELD ? 1 : 0;
+  E.search.style.boxShadow = focus ? "0 0 0 3px rgba(47,84,255,.35)" : "none";
+  E.search.style.background = focus ? "#fff" : "#f2f2f6";
+  typed(E.query, QUERY, t, QUERY_AT, QUERY_CPS);
+  if (t >= CLICK_FIELD && t < QUERY_AT) E.query.innerHTML = '<i class="caret"></i>';
+
+  // Results arrive one after another; the clicked one highlights.
+  rows.forEach((el, i) => {
+    const k = spring(t - (ROWS_AT + i * 0.08), 14, 0.8);
+    el.style.opacity = clamp(k * 1.6);
+    el.style.transform = `translateY(${lerp(40, 0, k)}px)`;
+    el.style.background = i === 1 && t >= CLICK_ROW ? "#eef1ff" : "transparent";
+  });
+
+  // The detail panel slides in from the right.
+  const p = spring(t - PANEL, 12, 0.85);
+  E.panel.style.opacity = clamp(p * 1.5);
+  E.panel.style.transform = `translateX(${lerp(120, 0, p)}px)`;
+
+  // The cursor: eased between points, a little dip on each click.
+  const [x, y] = cursorAt(t);
+  const down = [CLICK_FIELD, CLICK_ROW, CLICK_SAVE].some((c) => t >= c && t < c + 0.14);
+  E.save.style.transform = t >= CLICK_SAVE && t < CLICK_SAVE + 0.14 ? "scale(0.96)" : "none";
+  tf(E.cursor, x, y, down ? 0.85 : 1);
+  vis(E.cursor, seg(t, 0.85, 1.0) * (1 - seg(t, 5.1, 5.3)));
+
+  // The toast.
+  const k = spring(t - TOAST, 15, 0.7);
+  E.toast.style.opacity = clamp(k * 1.6);
+  E.toast.style.transform = `translateY(${lerp(40, 0, k)}px) scale(${lerp(0.9, 1, k)})`;
+}
+
+async function sound(ctx) {
+  const m = mix(ctx);
+  await Promise.all([
+    m.sfx("whoosh", 0.1, 0.35, 1.05),
+    m.sfx("click", CLICK_FIELD, 0.8),
+    m.keys(QUERY_AT, QUERY.length, QUERY_CPS, 0.2),
+    ...RESULTS.map((_, i) => m.sfx("pop", ROWS_AT + i * 0.08 + 0.04, 0.2, 0.95 + i * 0.06)),
+    m.sfx("click", CLICK_ROW, 0.8),
+    m.sfx("whoosh", PANEL - 0.05, 0.3, 1.2),
+    m.sfx("click", CLICK_SAVE, 0.8),
+    m.sfx("pop", TOAST + 0.05, 0.4, 0.85)
+  ]);
+  m.pad(0.3, 1.9, DURATION, PROGRESSION.slice(0, 4));
+}
+
+film({ width: WIDTH, height: HEIGHT, duration: DURATION, draw, sound, fonts: ["500 40px IDRA", "600 40px IDRA", "650 40px IDRA", "700 40px IDRA"] });
+</script>
+</body>
+</html>

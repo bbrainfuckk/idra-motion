@@ -75,8 +75,10 @@ the chat, and never write one into a file that git tracks.
 
 ## 4. The scene
 
-`new_scene` (or copy `examples/starter/scene.html`). Read the `engine` and `example` guides once.
-Keep the structure:
+`new_scene` with the style closest to the brief (or copy its file from `examples/`): `starter`,
+`kinetic` (hype promo, one word per beat), `product-demo` (an app used on camera), `numbers` (stats,
+bars, a trend line), `vertical` (9:16 with word-by-word captions), `explainer`. Read the `engine` and
+`example` guides once. Keep the structure:
 
 - One `#stage` of the video's size; one `<section class="scene">` per part; a `.cam` layer for camera moves.
 - `draw(t)` sets every element from `t` alone. No CSS transitions or animations, no timers, no state.

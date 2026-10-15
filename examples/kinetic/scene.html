@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>idra-motion: kinetic type</title>
+<!--
+  Kinetic type: one huge word per beat, hard cuts between three colourways, a shape that punches
+  behind each word, then the title. The style of a 10 to 20 second hype promo or a launch teaser.
+
+  BEAT SHEET (seconds)                                                           HEARD
+   0.25  "Make"   black, white type                                              pop
+   0.62  "it"     white, black type                                              pop
+   0.99  "move."  blue, the circle punches                                       impact
+   1.60  "Every"  ... "frame" ... "from" ... "code." one word every 0.37 s       pops, impact on "code."
+   3.35  the title springs up letter by letter, a line fades in under it         whoosh, pad
+   5.00  end
+-->
+<style>
+  @font-face { font-family: "IDRA"; src: url("/fonts/Inter-opsz.woff2") format("woff2"); font-weight: 100 900; }
+  html, body { margin: 0; background: #000; overflow: hidden; height: 100%; }
+  #stage { position: absolute; left: 0; top: 0; overflow: hidden; background: #000;
+    font-family: "IDRA", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .full { position: absolute; inset: 0; }
+  .word { position: absolute; left: 0; right: 0; top: 50%; margin-top: -0.62em; text-align: center; white-space: nowrap;
+    font-size: 300px; font-weight: 800; letter-spacing: -0.055em; line-height: 1.2; }
+  .ring { position: absolute; left: 50%; top: 50%; border-radius: 50%; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="full" id="bg"></div>
+  <div class="ring" id="ring"></div>
+  <div class="word" id="word"></div>
+  <div class="full" id="end" style="visibility:hidden">
+    <div class="word" id="title" style="font-size:170px;margin-top:-1.1em"></div>
+    <div class="word" id="line" style="font-size:48px;font-weight:600;letter-spacing:-0.01em;margin-top:0.9em;color:#8e8e93">Motion graphics, made with code.</div>
+  </div>
+</div>
+<script type="module">
+import { clamp, lerp, seg, easeOut, easeIn, spring, vis, letters, $, $$ } from "/engine/motion.js";
+import { mix, PROGRESSION } from "/engine/sound.js";
+import { film } from "/engine/stage.js";
+
+const WIDTH = 1920, HEIGHT = 1080, DURATION = 5;
+const TITLE = "idra-motion";
+// [word, time it lands, colourway]
+const WORDS = [["Make", 0.25, 0], ["it", 0.62, 1], ["move.", 0.99, 2], ["Every", 1.6, 0], ["frame", 1.97, 1], ["from", 2.34, 0], ["code.", 2.71, 2]];
+const WAYS = [{ bg: "#000", fg: "#fff", ring: "#1c1c1e" }, { bg: "#fff", fg: "#000", ring: "#e5e5ea" }, { bg: "#2f54ff", fg: "#fff", ring: "#4a6bff" }];
+const END = 3.35;
+
+const stage = $("#stage");
+stage.style.width = `${WIDTH}px`;
+stage.style.height = `${HEIGHT}px`;
+$("#title").innerHTML = letters(TITLE);
+const E = Object.fromEntries($$("[id]").map((el) => [el.id, el]));
+const titleLetters = $$("#title span");
+
+function draw(t) {
+  const words = t < END;
+  vis(E.word, words ? 1 : 0);
+  vis(E.ring, words ? 1 : 0);
+  if (words) {
+    // The word on screen is the last one that has landed: hard cuts, no fades.
+    let i = -1;
+    for (let k = 0; k < WORDS.length; k += 1) if (t >= WORDS[k][1]) i = k;
+    if (i < 0) { E.bg.style.background = "#000"; vis(E.word, 0); vis(E.ring, 0); return; }
+    const [text, at, way] = WORDS[i], c = WAYS[way], k = spring(t - at, 22, 0.62);
+    E.bg.style.background = c.bg;
+    E.word.textContent = text;
+    E.word.style.color = c.fg;
+    E.word.style.transform = `scale(${lerp(1.45, 1, k)}) rotate(${lerp(i % 2 ? -4 : 4, 0, k)}deg)`;
+    // A circle punches out behind each word and settles.
+    const r = lerp(120, 520, spring(t - at, 16, 0.7));
+    E.ring.style.cssText += `;width:${2 * r}px;height:${2 * r}px;margin:${-r}px 0 0 ${-r}px;background:${c.ring}`;
+    return;
+  }
+  // The title on black.
+  E.bg.style.background = "#000";
+  vis(E.end, 1);
+  titleLetters.forEach((el, n) => {
+    const k = spring(t - (END + 0.05 + n * 0.035), 15, 0.75);
+    el.style.color = "#fff";
+    el.style.opacity = clamp(k * 1.6);
+    el.style.transform = `translateY(${lerp(90, 0, k)}px)`;
+  });
+  const line = easeOut(seg(t, END + 0.6, END + 1.0));
+  E.line.style.opacity = line;
+  E.line.style.transform = `translateY(${lerp(20, 0, line)}px)`;
+}
+
+async function sound(ctx) {
+  const m = mix(ctx);
+  await Promise.all([
+    ...WORDS.map(([, at, way]) => (way === 2 ? m.sfx("impact", at, 0.6, 1.05) : m.sfx("pop", at, 0.35, 0.9 + at * 0.05))),
+    m.sfx("whoosh", END - 0.12, 0.4, 0.95),
+    ...titleLetters.filter((_, n) => n % 3 === 0).map((_, n) => m.sfx("pop", END + 0.1 + n * 0.1, 0.16, 1 + n * 0.05))
+  ]);
+  m.pad(END - 0.1, 1.6, DURATION, PROGRESSION.slice(2, 4));
+}
+
+film({ width: WIDTH, height: HEIGHT, duration: DURATION, draw, sound, fonts: ["600 40px IDRA", "800 40px IDRA"] });
+</script>
+</body>
+</html>

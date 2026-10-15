@@ -40,6 +40,77 @@ You have full creative freedom.
 The skill carries the rest: beat sheet first, every spoken word shown on screen as it is said, stills
 at every beat before rendering. With the MCP server, the same brief is built in as `make_trailer`.
 
+## What you can make
+
+Every style below is a real scene in `examples/`, made with idra-motion and rendered by it. Start a
+video from any of them with `new_scene` (pick the `style`), or copy the file.
+
+| Style | What it is | Start from |
+| --- | --- | --- |
+| [Launch trailer](#launch-trailer) | 45 to 60 s, narrated, the product's own screens rebuilt and used on camera. | the [method](docs/one-shot.md) |
+| [Product demo](#product-demo) | The app rebuilt in HTML and used: typing, cursor clicks, results, a detail panel. | `product-demo` |
+| [Kinetic type](#kinetic-type) | 10 to 20 s hype promo: one huge word per beat, hard colour cuts. | `kinetic` |
+| [Numbers](#numbers) | Results and reports: a stat that rolls up, bars, a trend line, a highlight. | `numbers` |
+| [Vertical captions](#vertical-captions) | 9:16 for Reels, TikTok and Shorts, captions lit word by word. | `vertical` |
+| [Explainer](#explainer) | A short story in scenes: typed code, a timeline, a click, a logo reveal. | `explainer` |
+
+### Launch trailer
+
+<p align="center"><img src="media/styles/trailer.gif" width="80%" alt="A wall of identical job forms pulls back, folds into a dot and becomes the LetAIApply logo"></p>
+
+From the [LetAIApply launch trailer](https://www.youtube.com/watch?v=0TXt47MJRPY). Ask for it:
+
+```text
+Make a 45 second launch trailer for <product> (<link>) with idra-motion, with narration.
+```
+
+### Product demo
+
+<p align="center"><img src="media/styles/product-demo.gif" width="80%" alt="An app window: a search is typed, results spring in, a result is clicked, a detail panel slides in and Save is clicked"></p>
+
+```text
+Make a 30 second product demo of <app> with idra-motion: rebuild its main screen, search for
+something, open a result and save it. Start from the product-demo style.
+```
+
+### Kinetic type
+
+<p align="center"><img src="media/styles/kinetic.gif" width="80%" alt="Huge words cut in one per beat on black, white and blue, then a title"></p>
+
+```text
+Make a 15 second kinetic type teaser for <product> with idra-motion: one word per beat, our
+colours, ending on the logo. Start from the kinetic style.
+```
+
+### Numbers
+
+<p align="center"><img src="media/styles/numbers.gif" width="80%" alt="A stat counts up to 12,480, six bars grow, a trend line draws itself and the best week turns blue"></p>
+
+```text
+Make a 20 second results video with idra-motion from these numbers: <your data>. Count up the
+headline, grow the bars, highlight the best one. Start from the numbers style.
+```
+
+### Vertical captions
+
+<p align="center"><img src="media/styles/vertical.gif" width="36%" alt="A vertical clip with a moving voice waveform and big captions that light up word by word"></p>
+
+```text
+Make a 30 second vertical clip for Reels with idra-motion, narrated, with captions that light up on
+every word. Start from the vertical style and time the captions with word_timings.
+```
+
+### Explainer
+
+<p align="center"><img src="media/styles/hello.gif" width="80%" alt="Words spring up, code types itself, a playhead runs, frames fly in, Render is clicked, a logo reveal"></p>
+
+```text
+Make a 10 second explainer of how <feature> works with idra-motion. Start from the explainer style.
+```
+
+All six are rendered with `node render.mjs <scene> <name>.gif --fps 20` (the GIFs are silent; the
+scenes have sound).
+
 ## Install
 
 Every way needs Node 20+, Chrome or Edge, and ffmpeg (`winget install Gyan.FFmpeg`,
@@ -145,6 +216,7 @@ node render.mjs examples/hello/scene.html out/check.jpg --stills 0.9,3.6,6.4,9.9
 node render.mjs examples/hello/scene.html out/draft.mp4 --fps 30 --workers 4
 node render.mjs examples/hello/scene.html out/master.mp4 --fps 60 --subframes 4
 node render.mjs examples/hello/scene.html out/mix.wav --audio            # the soundtrack only
+node render.mjs examples/hello/scene.html out/clip.gif --fps 20          # a looping GIF, no sound
 ```
 
 `FFMPEG=<path>` if ffmpeg isn't on PATH; `--browser <path>` if Chrome or Edge isn't found.
@@ -186,8 +258,10 @@ No CSS transitions, no timers, no state between frames. Same `t`, same frame: an
 | `.env.example` | Where your ElevenLabs key goes: copy it to `.env` (git ignores `.env`). |
 | `sfx/` | Six sound effects (whoosh, click, pop, riser, impact, tick), public domain (CC0). |
 | `fonts/` | Inter (SIL Open Font License). |
-| `examples/starter/` | The scene `new_scene` copies: title, typed line, camera drift, sound. |
-| `examples/hello/` | A finished 10 second example with sound. |
+| `examples/starter/` | The default for `new_scene`: title, typed line, camera drift, sound. |
+| `examples/kinetic/`, `product-demo/`, `numbers/`, `vertical/` | The styles above, each a finished scene with sound. |
+| `examples/hello/` | The explainer: a finished 10 second example with sound. |
+| `media/styles/` | The preview GIFs in this README. |
 | `docs/one-shot.md` | The method, with the LetAIApply trailer as the worked example. |
 | `docs/narration.md` | The voice: ElevenLabs key setup, the free TTSWP credits, Whisper word timings. |
 | `tests/mcp.test.mjs` | Drives the MCP server end to end (`npm test`). |
